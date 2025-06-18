@@ -1,0 +1,150 @@
+-- Aethra Hub Pet Spawner for Grow a Garden
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+
+-- Clean old guis
+for _, v in pairs(CoreGui:GetChildren()) do
+    if v.Name == "AethraPetMessage" or v.Name == "AethraPetGui" then
+        v:Destroy()
+    end
+end
+
+-- Show wait message
+local MsgGui = Instance.new("ScreenGui", CoreGui)
+MsgGui.Name = "AethraPetMessage"
+
+local MsgFrame = Instance.new("Frame", MsgGui)
+MsgFrame.Size = UDim2.new(0, 400, 0, 120)
+MsgFrame.Position = UDim2.new(0.5, -200, 0.5, -60)
+MsgFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 60)
+MsgFrame.BorderSizePixel = 0
+Instance.new("UICorner", MsgFrame).CornerRadius = UDim.new(0, 15)
+
+local MsgLabel = Instance.new("TextLabel", MsgFrame)
+MsgLabel.Size = UDim2.new(1, -20, 1, -20)
+MsgLabel.Position = UDim2.new(0, 10, 0, 10)
+MsgLabel.BackgroundTransparency = 1
+MsgLabel.Text = "Please wait 5 to 10 minutes before starting spawning."
+MsgLabel.TextColor3 = Color3.fromRGB(220, 240, 255)
+MsgLabel.Font = Enum.Font.FredokaOne
+MsgLabel.TextSize = 20
+MsgLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+MsgLabel.TextStrokeTransparency = 0
+MsgLabel.TextWrapped = true
+
+wait(300) -- 5 minutes wait
+
+MsgGui:Destroy()
+
+-- Main GUI
+local MainGui = Instance.new("ScreenGui", CoreGui)
+MainGui.Name = "AethraPetGui"
+
+local Frame = Instance.new("Frame", MainGui)
+Frame.Size = UDim2.new(0, 340, 0, 250)
+Frame.Position = UDim2.new(0.3, 0, 0.3, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 50)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 12)
+
+local Stroke = Instance.new("UIStroke", Frame)
+Stroke.Color = Color3.fromRGB(100, 200, 255)
+Stroke.Thickness = 3
+
+local Title = Instance.new("TextLabel", Frame)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Position = UDim2.new(0, 0, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "🌸 Aethra Hub – Pet Spawner"
+Title.TextColor3 = Color3.fromRGB(180, 240, 255)
+Title.Font = Enum.Font.FredokaOne
+Title.TextSize = 22
+Title.TextStrokeColor3 = Color3.new(0, 0, 0)
+Title.TextStrokeTransparency = 0
+
+local PetNameBox = Instance.new("TextBox", Frame)
+PetNameBox.PlaceholderText = "Enter Pet Name (exact case)"
+PetNameBox.Position = UDim2.new(0.05, 0, 0, 60)
+PetNameBox.Size = UDim2.new(0.9, 0, 0, 35)
+PetNameBox.BackgroundColor3 = Color3.fromRGB(40, 40, 70)
+PetNameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+PetNameBox.Font = Enum.Font.Gotham
+PetNameBox.TextSize = 16
+PetNameBox.ClearTextOnFocus = false
+Instance.new("UICorner", PetNameBox).CornerRadius = UDim.new(0, 8)
+
+local AgeBox = Instance.new("TextBox", Frame)
+AgeBox.PlaceholderText = "Enter Pet Age (number)"
+AgeBox.Position = UDim2.new(0.05, 0, 0, 105)
+AgeBox.Size = UDim2.new(0.9, 0, 0, 35)
+AgeBox.BackgroundColor3 = Color3.fromRGB(40, 40, 70)
+AgeBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+AgeBox.Font = Enum.Font.Gotham
+AgeBox.TextSize = 16
+AgeBox.ClearTextOnFocus = false
+Instance.new("UICorner", AgeBox).CornerRadius = UDim.new(0, 8)
+
+local SpawnButton = Instance.new("TextButton", Frame)
+SpawnButton.Text = "Spawn Pet"
+SpawnButton.Position = UDim2.new(0.25, 0, 0, 160)
+SpawnButton.Size = UDim2.new(0.5, 0, 0, 40)
+SpawnButton.BackgroundColor3 = Color3.fromRGB(70, 150, 255)
+SpawnButton.TextColor3 = Color3.new(1, 1, 1)
+SpawnButton.Font = Enum.Font.FredokaOne
+SpawnButton.TextSize = 18
+Instance.new("UICorner", SpawnButton).CornerRadius = UDim.new(0, 12)
+
+local function spawnPet(name, age)
+    if not name or name == "" then
+        warn("Pet name required")
+        return
+    end
+
+    local numAge = tonumber(age) or 0
+
+    -- Try to find pet model in workspace or ReplicatedStorage
+    local petModel = nil
+    -- This depends on how Grow a Garden stores pets, for demo let's say pets are in ReplicatedStorage.Pets folder
+    local petsFolder = ReplicatedStorage:FindFirstChild("Pets")
+    if petsFolder then
+        petModel = petsFolder:FindFirstChild(name)
+    end
+    if not petModel then
+        warn("Pet not found: "..name)
+        return
+    end
+
+    -- Clone pet and parent to character's hand (assumes RightHand exists)
+    local petClone = petModel:Clone()
+    petClone.Name = name.."_VisualPet"
+
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hand = char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm")
+    if not hand then
+        warn("Hand not found")
+        return
+    end
+
+    petClone.Parent = char
+    petClone:SetPrimaryPartCFrame(hand.CFrame * CFrame.new(0, 0, 1)) -- spawn slightly in front
+
+    -- Weld pet to hand
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = hand
+    weld.Part1 = petClone.PrimaryPart
+    weld.Parent = petClone.PrimaryPart
+
+    -- Set some property for age, if any? (visual only, so just store in Attribute)
+    petClone:SetAttribute("Age", numAge)
+
+    print("Spawned pet: "..name.." Age: "..numAge)
+end
+
+SpawnButton.MouseButton1Click:Connect(function()
+    spawnPet(PetNameBox.Text, AgeBox.Text)
+end)
+]])
